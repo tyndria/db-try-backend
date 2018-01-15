@@ -1,0 +1,15 @@
+{
+  "port": 8080,
+  "publicPath": "public",
+  "mongodb": {
+    "url": "mongodb://localhost/dbtry",
+    "options": {}
+  },
+  "session": {
+    "secret": "MUST BE SET IN $DBTRY_SECRET",
+    "resave": false,
+    "saveUninitialized": false,
+    "cookie": {}
+  },
+  "trustProxy": 1
+}
