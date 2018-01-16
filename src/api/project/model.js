@@ -12,4 +12,9 @@ const ProjectSchema = new Schema({
 
 const Project = mongoose.model('Project', ProjectSchema);
 
+export const serializeProject = project => ({
+	name: project.name,
+	id: project._id
+});
+
 export default Project;

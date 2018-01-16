@@ -1,18 +1,15 @@
-import Project, { serializeProject } from './model';
+import Scheme from './model';
 import { sendJson } from '../../utils/api';
 
 export const getAll = (req, res, next) => {
-	return Project.find()
-		.populate('schemas')
-		.then(projects => projects.map(serializeProject))
+	return Scheme.find()
 		.then(sendJson(res))
 		.catch(next);
 };
 
 export const create = async ({ body }, res, next) => {
-	return Project(body)
+	return Scheme(body)
 		.save()
-		.then(serializeProject)
 		.then(sendJson(res))
 		.catch(next);
 };
