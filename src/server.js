@@ -6,6 +6,7 @@ import path from 'path';
 
 import config from 'config';
 import { sendJson } from 'utils/api';
+import api from 'api';
 
 export const publicPath = path.resolve(`${__dirname}/../`, config.publicPath);
 
@@ -17,6 +18,8 @@ app.use(session(config.session));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static(publicPath));
+
+app.use('/api', api);
 
 app.use((err, req, res, next) => {
 	console.error(err.message);
