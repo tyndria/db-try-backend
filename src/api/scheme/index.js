@@ -7,6 +7,7 @@ const router = Router();
 
 router.get('/', controller.getAll);
 router.post('/', controller.create);
+router.put('/', controller.update);
 
 export { Scheme };
 export default router;

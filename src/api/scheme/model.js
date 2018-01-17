@@ -5,7 +5,11 @@ const SchemeSchema = new Schema({
 	projectId: {
 		type: Schema.Types.ObjectId,
 		ref: 'Project'
-	}
+	},
+	fields: [{
+		type: Schema.Types.ObjectId,
+		ref: 'Field'
+	}]
 });
 
 const Scheme = mongoose.model('Scheme', SchemeSchema);
