@@ -21,14 +21,18 @@ export const update = async ({ body }, res, next) => {
 	let code;
 	try {
 		const schemeProject = await Project.findById(body.projectId);
-
 		const schemeBody = {
-			name: body.name,
 			projectId: schemeProject._id,
 			fields: []
 		};
+
+		if(body.name) {
+			schemeBody.name = body.name;
+		}
+
 		const fieldsToSave = body.fields;
 
+		/*  TODO: fields array consists of object with id as a key */
 		for (let i = 0; i < fieldsToSave.length; i ++) {
 			try {
 				const field = Field(fieldsToSave[i]);
