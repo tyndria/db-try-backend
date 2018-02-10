@@ -16,6 +16,14 @@ export const create = async ({ body }, res, next) => {
 		.catch(next);
 };
 
+export const getByProjectId = ({ params }, res, next) => {
+	const projectId = params.projectId;
+	return Scheme.find({projectId})
+		.populate('fields')
+    .then(sendJson(res))
+    .catch(next);
+};
+
 export const update = async ({ body }, res, next) => {
 	let data;
 	let code;
@@ -30,12 +38,13 @@ export const update = async ({ body }, res, next) => {
 			schemeBody.name = body.name;
 		}
 
+		/* Field is object with key is id and value is object {type, name} */
 		const fieldsToSave = body.fields;
+    const keys = Object.keys(fieldsToSave);
 
-		/*  TODO: fields array consists of object with id as a key */
-		for (let i = 0; i < fieldsToSave.length; i ++) {
+		for (let i = 0; i < keys.length; i ++) {
 			try {
-				const field = Field(fieldsToSave[i]);
+				const field = Field(fieldsToSave[keys[i]]);
 				await field.save();
 				schemeBody.fields.push(field._id);
 			} catch (err) {
@@ -51,6 +60,8 @@ export const update = async ({ body }, res, next) => {
 				schemeProject.schemas.push(scheme._id);
 				await schemeProject.save
 			}
+
+			data = scheme;
 		} catch (err) {
 			data = err;
 			code = 400;

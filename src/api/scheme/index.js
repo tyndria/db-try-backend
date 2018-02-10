@@ -8,6 +8,7 @@ const router = Router();
 router.get('/', controller.getAll);
 router.post('/', controller.create);
 router.put('/', controller.update);
+router.get('/:projectId', controller.getByProjectId);
 
 export { Scheme };
 export default router;
