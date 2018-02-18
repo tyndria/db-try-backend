@@ -1,5 +1,5 @@
 import config from 'config';
-import mysql from 'mysql';
+import mysql from 'mysql2/promise';
 import {getRandom} from './query';
 
 export const processProjectMySQL = async (schemas) => {
@@ -13,12 +13,10 @@ export const processProjectMySQL = async (schemas) => {
 
   async function processSchemas(schema) {
     await createTable(schema);
-
-    // field result.values could be useful
+    
     const insertedObject = await completeInsert(schema);
 
     const selectedObjects = await completeSelect(schema, insertedObject.values);
-    console.log('SELECTEE', selectedObjects.results);
 
     await dropTable(schema);
   }
@@ -68,7 +66,6 @@ export const processProjectMySQL = async (schemas) => {
 
   async function establishConnection() {
     const connection = mysql.createConnection(config.mysql.url);
-    connection.connect();
     return connection;
   }
 

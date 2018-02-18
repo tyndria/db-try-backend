@@ -20,7 +20,8 @@
     "express": "^4.15.3",
     "express-session": "^1.15.4",
     "lodash": "^4.17.4",
-    "mongoose": "^4.13.8"
+    "mongoose": "^4.13.8",
+    "mysql2": "^1.5.2"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
