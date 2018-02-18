@@ -1,5 +1,5 @@
 import mongoose, {Schema} from 'mongoose';
-import crypto from 'crypto';
+import {getRandom} from './query';
 
 export const processProject = async (schemas) => {
   for (let i = 0; i < schemas.length; i++) {
@@ -29,7 +29,7 @@ export const processProject = async (schemas) => {
     const document = {};
     /* Simplifying */
     fields.forEach(({name, type}) => {
-      document[name] = type.toLowerCase() === 'string' ? getRandomString() : getRandomNumber();
+      document[name] = getRandom(type);
     });
     return document;
   }
@@ -51,14 +51,6 @@ export const processProject = async (schemas) => {
 
   async function deleteColletion(Collection) {
     await Collection.collection.drop();
-  }
-
-  function getRandomString() {
-    return crypto.randomBytes(64).toString('hex');
-  }
-
-  function getRandomNumber() {
-    return Math.random();
   }
 
   const EXPERIMENTS_NUMBER = 10;
