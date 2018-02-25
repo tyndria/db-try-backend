@@ -11,5 +11,8 @@
     "saveUninitialized": false,
     "cookie": {}
   },
+  "auth": {
+    "saltRounds": 6,
+  },
   "trustProxy": 1
 }
