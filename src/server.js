@@ -4,6 +4,7 @@ import session from 'express-session';
 import cors from 'cors';
 import path from 'path';
 
+import { passport } from 'auth';
 import config from 'config';
 import { sendJson } from 'utils/api';
 import api from 'api';
@@ -18,6 +19,8 @@ app.use(session(config.session));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static(publicPath));
+app.use(passport.initialize());
+app.use(passport.session());
 
 app.use('/api', api);
 
