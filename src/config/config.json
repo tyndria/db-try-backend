@@ -12,7 +12,7 @@
     "cookie": {}
   },
   "auth": {
-    "saltRounds": "6"
+    "saltRounds": 8
   },
   "trustProxy": 1
 }

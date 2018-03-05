@@ -21,7 +21,7 @@ passport.use(
 			User.findOne({email})
 				.then(result => {
 					if (!result) {
-						throw new BadRequestError({password: 'Email or password is wrong'});
+						throw new BadRequestError('Email or password is wrong');
 					}
 
 					user = result;
@@ -29,7 +29,7 @@ passport.use(
 				})
 				.then(isAuthenticated => {
 					if (!isAuthenticated) {
-						throw new BadRequestError({password: 'Email or password is wrong'});
+						throw new BadRequestError('Email or password is wrong');
 					}
 
 					return done(null, user);
@@ -46,12 +46,12 @@ passport.use(
 			usernameField: 'email',
 			passwordField: 'password',
 		},
-		(req, email, password, done) => {
+		(email, password, done) => {
 			let user;
 			User.findOne({email})
 				.then(result => {
 					if (result) {
-						throw new HttpError({password: 'This email is already used'}, 400);
+						throw new BadRequestError('This email is already used');
 					}
 
 					user = new User({email});

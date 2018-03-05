@@ -1,7 +1,9 @@
 {
+  "sourceMaps": "both",
   "presets": [
     "es2015",
-    "stage-2"
+    "stage-2",
+    "env"
   ],
   "plugins": [
     "transform-async-to-generator",

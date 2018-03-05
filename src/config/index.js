@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import session from 'express-session';
 import connectMongo from 'connect-mongo';
+import merge from 'lodash/merge';
 import fs from 'fs';
 import path from 'path';
 

@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import User from './model';
+import User, { serializeUser } from './model';
 
 const router = Router();
 
-export { User } ;
+export { User, serializeUser } ;
 
 export default router;
