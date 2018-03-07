@@ -1,4 +1,6 @@
 import { Router } from 'express';
+import {requireAuth, verifyPermission} from "../../auth/middlewares"
+import {permissions} from "../../constants/permissions";
 
 import * as controller from './controller';
 import Project from './model';

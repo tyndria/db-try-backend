@@ -1,5 +1,7 @@
 import mongoose, {Schema} from 'mongoose';
+
 import config from 'config';
+import roles from '../../constants/permissions';
 import {genSalt, hash, compare} from 'bcrypt';
 import pick from 'lodash/pick';
 
@@ -12,7 +14,6 @@ const UserSchema = new Schema({
 		required: true,
 	},
 	passwordHash: String,
-	permissions: Schema.Types.Mixed,
 	role: {
 		type: String,
 		enum: ['client', 'developer', 'lead'],
@@ -27,6 +28,10 @@ UserSchema.virtual('name').get(function get () {
 
 UserSchema.virtual('password').get(function get () {
 	return this.passwordHash;
+});
+
+UserSchema.virtual('permissions').get(function get () {
+	return roles[this.role];
 });
 
 UserSchema.methods.setPassword = async function set (password) {
@@ -49,6 +54,6 @@ const fieldsToSerialize = ['firstName', 'lastName', 'email', 'role'];
 // https://github.com/lodash/lodash/blob/master/pick.js
 export const serializeUser = object => pick(object, [...fieldsToSerialize, 'permissions']);
 
-export const checkPermissions = (user, list) => user && list.every(perm => user.permissions[perm]);
+export const checkPermissions = (user, list) => user && list.every(perm => user.permissions.includes(perm));
 
 export default User;

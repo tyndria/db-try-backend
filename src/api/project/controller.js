@@ -31,4 +31,4 @@ export const run = async({params}, res, next) => {
     })
     .then(sendJson(res))
     .catch(next);
-}
+};
