@@ -28,17 +28,18 @@ export const processProject = async (schemas) => {
       delete: 0
     };
 
-    const document = getRandomlyFilledDocument(schema.fields);
     const insertedDocumentsId = [];
 
     const executionTime = [];
     for (let i = 0; i < EXPERIMENTS_NUMBER; i++) {
-      const hrstart = process.hrtime();
+      const document = getRandomlyFilledDocument(schema.fields);
 
+      const hrstart = process.hrtime();
       const id = await insertDocument(Collection, document);
+      const hrend = process.hrtime(hrstart);
+
       insertedDocumentsId.push(id);
 
-      const hrend = process.hrtime(hrstart);
       executionTime.push(hrend[1] / 1000000);
     }
     statistics.create = executionTime.reduce((prev, curr) => prev + curr, 0) / EXPERIMENTS_NUMBER;
@@ -86,7 +87,7 @@ export const processProject = async (schemas) => {
   }
 
   async function readDocument(Collection, id) {
-    return await Collection.findOne({_id: id});
+    return Collection.findOne({_id: id});
   }
 
   async function deleteDocument(Collection, id) {

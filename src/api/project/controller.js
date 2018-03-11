@@ -21,13 +21,12 @@ export const create = async ({body}, res, next) => {
 };
 
 /* It's run only mongodb */
-export const run = async({params}, res, next) => {
+export const run = async ({params}, res, next) => {
   const projectId = params.projectId;
   return Scheme.find({projectId})
     .populate('fields')
-    .then(schemas =>  {
-      return processProject(schemas);
-      //return processProjectMySQL(schemas);
+    .then(schemas => {
+      return Promise.all([processProject(schemas), processProjectMySQL(schemas)]);
     })
     .then(sendJson(res))
     .catch(next);
