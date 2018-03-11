@@ -121,6 +121,19 @@ export const update = async ({body}, res, next) => {
 		}
 		sendJson(res, code)(data);
 	} catch (err) {
-		next(err);
-	}
+    next(err);
+  }
+};
+
+export const remove = async ({params}, res, next) => {
+	const schemeId = params.schemeId;
+	try {
+    const scheme = await Scheme.findById(schemeId);
+    for (let i = 0; i < scheme.fields.length; i ++) {
+      await Field.findByIdAndRemove(scheme.fields[i]._id);
+		}
+		return scheme.remove().then(sendJson(res)).catch(next);
+	} catch (err) {
+    next(err);
+  }
 };

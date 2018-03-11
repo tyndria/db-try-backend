@@ -11,6 +11,7 @@ router.put('/save', controller.save);
 
 router.post('/', controller.create);
 router.put('/', controller.update);
+router.delete('/:schemeId', controller.remove);
 
 router.get('/:projectId', controller.getByProjectId);
 
