@@ -130,7 +130,7 @@ export const remove = async ({params}, res, next) => {
 	try {
     const scheme = await Scheme.findById(schemeId);
     for (let i = 0; i < scheme.fields.length; i ++) {
-      await Field.findByIdAndRemove(scheme.fields[i]._id);
+      await Field.findByIdAndRemove(scheme.fields[i]);
 		}
 		return scheme.remove().then(sendJson(res)).catch(next);
 	} catch (err) {
