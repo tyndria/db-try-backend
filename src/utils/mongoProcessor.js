@@ -3,29 +3,21 @@ import {getRandom} from './query';
 
 const EXPERIMENTS_NUMBER = 10;
 
+/* THINK ABOUT MORE SOPHISTICATED METHOD OF GETTING STATISTICS */
+/* 1. INSERT SOME AMOUNT OF DOCUMENTS
+ * 2. RANDOMLY GET DOCUMENTS IDS THAT SHOULD BE RETRIEVED / UPDATED / DELETED FROM COLLECTION */
+/* for this moment I select/update/delete the same documents that were inserted */
 export const processProject = async (schemas) => {
   return processSchemas(schemas[0]);
 
   async function processSchemas(schema) {
     const Collection = await createCollection(schema.name);
 
-    const experimentsStatistics = {
-      create: 0,
-      read: 0,
-      update: 0,
-      delete: 0
-    };
-
-    for (let i = 0; i < EXPERIMENTS_NUMBER; i ++) {
-      const experimentStatistics = await processOperationSeq(Collection, schema);
-      Object.keys(experimentsStatistics).forEach((key) => {
-        experimentsStatistics[key] = experimentsStatistics[key] + experimentStatistics[key];
-      })
-    }
+    const experimentStatistics = await processOperationSeq(Collection, schema);
 
     await deleteCollection(Collection);
 
-    return experimentsStatistics;
+    return experimentStatistics;
   }
 
   async function processOperationSeq(Collection, schema) {
@@ -37,17 +29,25 @@ export const processProject = async (schemas) => {
     };
 
     const document = getRandomlyFilledDocument(schema.fields);
+    const insertedDocumentsId = [];
 
-    const hrstart = process.hrtime();
-    const id = await insertDocument(Collection, document);
-    const hrend = process.hrtime(hrstart);
-    statistics.create = hrend[1] / 1000000;
+    const executionTime = [];
+    for (let i = 0; i < EXPERIMENTS_NUMBER; i++) {
+      const hrstart = process.hrtime();
 
-    statistics.read = await countOperationTimeMS(readDocument, Collection,  id);
+      const id = await insertDocument(Collection, document);
+      insertedDocumentsId.push(id);
 
-    statistics.update = await countOperationTimeMS(updateDocument, Collection, id, schema.fields);
+      const hrend = process.hrtime(hrstart);
+      executionTime.push(hrend[1] / 1000000);
+    }
+    statistics.create = executionTime.reduce((prev, curr) => prev + curr, 0) / EXPERIMENTS_NUMBER;
 
-    statistics.delete = await countOperationTimeMS(deleteDocument, Collection, id);
+    statistics.read = await countOperationTimeMS(readDocument, Collection, insertedDocumentsId);
+
+    statistics.update = await countOperationTimeMS(updateDocument, Collection, insertedDocumentsId, schema.fields);
+
+    statistics.delete = await countOperationTimeMS(deleteDocument, Collection, insertedDocumentsId);
 
     return statistics;
   }
@@ -97,10 +97,14 @@ export const processProject = async (schemas) => {
     await Collection.collection.drop();
   }
 
-  async function countOperationTimeMS(callOperation, ...args) {
-    const hrstart = process.hrtime();
-    await callOperation(...args);
-    const hrend = process.hrtime(hrstart);
-    return hrend[1] / 1000000;
+  async function countOperationTimeMS(callOperation, Collection, ids, ...args) {
+    const executionTime = [];
+    for (let i = 0; i < EXPERIMENTS_NUMBER; i++) {
+      const hrstart = process.hrtime();
+      await callOperation(Collection, ids[i], ...args);
+      const hrend = process.hrtime(hrstart);
+      executionTime.push(hrend[1] / 1000000);
+    }
+    return executionTime.reduce((prev, curr) => prev + curr, 0) / EXPERIMENTS_NUMBER;
   }
 };
