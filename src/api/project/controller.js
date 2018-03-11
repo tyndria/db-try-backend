@@ -26,8 +26,8 @@ export const run = async({params}, res, next) => {
   return Scheme.find({projectId})
     .populate('fields')
     .then(schemas =>  {
-      //await processProject(schemas);
-      return processProjectMySQL(schemas);
+      return processProject(schemas);
+      //return processProjectMySQL(schemas);
     })
     .then(sendJson(res))
     .catch(next);
