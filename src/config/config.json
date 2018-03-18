@@ -2,8 +2,11 @@
   "port": 8080,
   "publicPath": "public",
   "mongodb": {
-    "url": "mongodb://localhost/dbtry",
+    "url": "MUST BE SET IN $MONGODB_URI",
     "options": {}
+  },
+  "mysql": {
+    "url": "MUST BE SET IN $CLEARDB_DATABASE_URL"
   },
   "session": {
     "secret": "MUST BE SET IN $DBTRY_SECRET",
