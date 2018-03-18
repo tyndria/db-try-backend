@@ -1,7 +1,7 @@
 import Project, {serializeProject} from './model';
 import Scheme from '../scheme/model';
 import {sendJson} from '../../utils/api';
-import {processProject} from '../../utils/mongoProcessor';
+import {processProjectMongo} from '../../utils/mongoProcessor';
 import {processProjectMySQL} from '../../utils/mysqlProcessor';
 
 export const getAll = (req, res, next) => {
@@ -25,9 +25,13 @@ export const run = async ({params}, res, next) => {
   const projectId = params.projectId;
   return Scheme.find({projectId})
     .populate('fields')
-    .then(schemas => {
-      return Promise.all([processProject(schemas), processProjectMySQL(schemas)]);
-    })
+    .then(processProject)
     .then(sendJson(res))
     .catch(next);
+};
+
+const processProject = async (schemas) => {
+  const mongo = await processProjectMongo(schemas);
+  const mysql = await processProjectMySQL(schemas);
+  return {mongo, mysql};
 };

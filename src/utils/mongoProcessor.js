@@ -7,7 +7,7 @@ const EXPERIMENTS_NUMBER = 10;
 /* 1. INSERT SOME AMOUNT OF DOCUMENTS
  * 2. RANDOMLY GET DOCUMENTS IDS THAT SHOULD BE RETRIEVED / UPDATED / DELETED FROM COLLECTION */
 /* for this moment I select/update/delete the same documents that were inserted */
-export const processProject = async (schemas) => {
+export const processProjectMongo = async (schemas) => {
   return processSchemas(schemas[0]);
 
   async function processSchemas(schema) {
