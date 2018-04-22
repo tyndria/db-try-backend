@@ -13,12 +13,11 @@ export const publicPath = path.resolve(`${__dirname}/../`, config.publicPath);
 
 const app = express();
 
-app.set('trust proxy', config.trustProxy);
-app.use(cors());
 app.use(express.static(publicPath));
-app.use(session(config.session));
+app.use(cors());
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({extended: false}));
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(session(config.session));
 app.use(passport.initialize());
 app.use(passport.session());
 

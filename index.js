@@ -13,6 +13,7 @@ app.get('*', (req, res) => {
 app.post('*', (req, res) => {
 	const headers = {};
 
+  headers['Access-Control-Allow-Credentials'] = 'true';
 	headers['Access-Control-Allow-Headers'] = 'Content-Type, Content-Length, Authorization, Accept, X-Requested-With';
 	res.writeHead(200, headers);
 

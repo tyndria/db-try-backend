@@ -12,10 +12,12 @@
     "secret": "MUST BE SET IN $DBTRY_SECRET",
     "resave": false,
     "saveUninitialized": false,
-    "cookie": {}
+    "cookie": {
+      "maxAge": 3600000,
+      "secure": false
+    },
   },
   "auth": {
     "saltRounds": 8
-  },
-  "trustProxy": 1
+  }
 }
