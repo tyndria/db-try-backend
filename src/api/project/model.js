@@ -2,6 +2,10 @@ import mongoose, { Schema } from 'mongoose';
 
 const ProjectSchema = new Schema({
 	name: String,
+	user: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+	},
 	schemas: [
 		{
 			type: Schema.Types.ObjectId,

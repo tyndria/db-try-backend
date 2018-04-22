@@ -52,7 +52,7 @@ const User = mongoose.model('User', UserSchema);
 const fieldsToSerialize = ['firstName', 'lastName', 'email', 'role'];
 
 // https://github.com/lodash/lodash/blob/master/pick.js
-export const serializeUser = object => pick(object, [...fieldsToSerialize, 'permissions']);
+export const serializeUser = object => pick(object, [...fieldsToSerialize, 'permissions', '_id']);
 
 export const checkPermissions = (user, list) => user && list.every(perm => user.permissions.includes(perm));
 

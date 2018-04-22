@@ -7,7 +7,7 @@ import Project from './model';
 
 const router = Router();
 
-router.get('/', controller.getAll);
+router.get('/:userId', controller.getAll);
 router.post('/', controller.create);
 router.get('/run/:projectId', controller.run);
 

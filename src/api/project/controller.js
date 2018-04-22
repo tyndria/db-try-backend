@@ -4,8 +4,8 @@ import {sendJson} from '../../utils/api';
 import {processProjectMongo} from '../../utils/mongoProcessor';
 import {processProjectMySQL} from '../../utils/mysqlProcessor';
 
-export const getAll = (req, res, next) => {
-  return Project.find()
+export const getAll = ({params: {userId}}, res, next) => {
+  return Project.find({user: userId})
     .populate('schemas')
     .then(projects => projects.map(serializeProject))
     .then(sendJson(res))
