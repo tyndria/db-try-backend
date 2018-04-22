@@ -15,7 +15,7 @@
     "cookie": {
       "maxAge": 3600000,
       "secure": false
-    },
+    }
   },
   "auth": {
     "saltRounds": 8
