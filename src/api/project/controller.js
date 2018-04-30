@@ -21,11 +21,11 @@ export const create = async ({body}, res, next) => {
 };
 
 /* It's run only mongodb */
-export const run = async ({params}, res, next) => {
+export const run = async ({params, body}, res, next) => {
   const projectId = params.projectId;
   return Scheme.find({projectId})
     .populate('fields')
-    .then(processProject)
+    .then(schemas => processProject(schemas, body))
     .then(sendJson(res))
     .catch(next);
 };
@@ -40,9 +40,9 @@ const statistics = [{
   operation: 'delete'
 }];
 
-const processProject = async (schemas) => {
-  const mongoStat = await processProjectMongo(schemas);
-  const mysqlStat = await processProjectMySQL(schemas);
+const processProject = async (schemas, config) => {
+  const mongoStat = await processProjectMongo(schemas, config);
+  const mysqlStat = await processProjectMySQL(schemas, config);
   return statistics.map(({operation}) => {
     return {operation, mongodb: mongoStat[operation], mysql: mysqlStat[operation]};
   });

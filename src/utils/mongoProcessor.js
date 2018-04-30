@@ -1,13 +1,13 @@
 import mongoose, {Schema} from 'mongoose';
 import {getRandom} from './query';
 
-const EXPERIMENTS_NUMBER = 10;
+const DEFAULT_EXPERIMENTS_NUMBER = 10;
 
 /* THINK ABOUT MORE SOPHISTICATED METHOD OF GETTING STATISTICS */
 /* 1. INSERT SOME AMOUNT OF DOCUMENTS
  * 2. RANDOMLY GET DOCUMENTS IDS THAT SHOULD BE RETRIEVED / UPDATED / DELETED FROM COLLECTION */
 /* for this moment I select/update/delete the same documents that were inserted */
-export const processProjectMongo = async (schemas) => {
+export const processProjectMongo = async (schemas, configs) => {
   return processSchemas(schemas[0]);
 
   async function processSchemas(schema) {
@@ -28,10 +28,14 @@ export const processProjectMongo = async (schemas) => {
       delete: 0
     };
 
-    const insertedDocumentsId = [];
+    const config = configs[schema._id];
+    const {loopCount, dataCount, create, read, update, remove} = config
+    const EXPERIMENTS_NUMBER = loopCount || DEFAULT_EXPERIMENTS_NUMBER;
 
+    const insertedDocumentsId = [];
     const executionTime = [];
-    for (let i = 0; i < EXPERIMENTS_NUMBER; i++) {
+
+    for (let i = 0; i < dataCount; i++) {
       const document = getRandomlyFilledDocument(schema.fields);
 
       const hrstart = process.hrtime();
@@ -42,13 +46,17 @@ export const processProjectMongo = async (schemas) => {
 
       executionTime.push(hrend[1] / 1000000);
     }
-    statistics.create = executionTime.reduce((prev, curr) => prev + curr, 0) / EXPERIMENTS_NUMBER;
 
-    statistics.read = await countOperationTimeMS(readDocument, Collection, insertedDocumentsId);
+    statistics.create = create.allow && executionTime.reduce((prev, curr) => prev + curr, 0) / dataCount;
 
-    statistics.update = await countOperationTimeMS(updateDocument, Collection, insertedDocumentsId, schema.fields);
+    statistics.read = read.allow &&
+      (await countOperationTimeMS(readDocument, EXPERIMENTS_NUMBER, Collection, insertedDocumentsId));
 
-    statistics.delete = await countOperationTimeMS(deleteDocument, Collection, insertedDocumentsId);
+    statistics.update = update.allow &&
+      (await countOperationTimeMS(updateDocument, EXPERIMENTS_NUMBER, Collection, insertedDocumentsId, schema.fields));
+
+    statistics.delete = remove.allow &&
+      (await countOperationTimeMS(deleteDocument, EXPERIMENTS_NUMBER, Collection, insertedDocumentsId));
 
     return statistics;
   }
@@ -98,14 +106,14 @@ export const processProjectMongo = async (schemas) => {
     await Collection.collection.drop();
   }
 
-  async function countOperationTimeMS(callOperation, Collection, ids, ...args) {
+  async function countOperationTimeMS(callOperation, experimentsNumber, Collection, ids, ...args) {
     const executionTime = [];
-    for (let i = 0; i < EXPERIMENTS_NUMBER; i++) {
+    for (let i = 0; i < experimentsNumber; i++) {
       const hrstart = process.hrtime();
       await callOperation(Collection, ids[i], ...args);
       const hrend = process.hrtime(hrstart);
       executionTime.push(hrend[1] / 1000000);
     }
-    return executionTime.reduce((prev, curr) => prev + curr, 0) / EXPERIMENTS_NUMBER;
+    return executionTime.reduce((prev, curr) => prev + curr, 0) / experimentsNumber;
   }
 };

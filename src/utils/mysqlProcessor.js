@@ -2,8 +2,8 @@ import config from 'config';
 import mysql from 'mysql2/promise';
 import {getRandom} from './query';
 
-export const processProjectMySQL = async (schemas) => {
-  const EXPERIMENTS_NUMBER = 10;
+export const processProjectMySQL = async (schemas, configs) => {
+  const DEFAULT_EXPERIMENTS_NUMBER = 10;
   const connection = await establishConnection();
 
   const statistics = await processSchemas(schemas[0]);
@@ -15,14 +15,14 @@ export const processProjectMySQL = async (schemas) => {
   async function processSchemas(schema) {
     await createTable(schema);
 
-    const statistics = await processOperationSeq(schema);
+    const statistics = await processOperationSeq(schema, configs[schema._id]);
 
     await dropTable(schema);
 
     return statistics;
   }
 
-  async function processOperationSeq(schema) {
+  async function processOperationSeq(schema, config) {
     let statistics = {
       create: 0,
       read: 0,
@@ -30,10 +30,14 @@ export const processProjectMySQL = async (schemas) => {
       delete: 0
     };
 
-    const insertedDocumentsId = [];
+    const {dataCount, loopCount, create, read, update, remove} = config;
 
+    const EXPERIMENTS_NUMBER = loopCount || DEFAULT_EXPERIMENTS_NUMBER;
+
+    const insertedDocumentsId = [];
     const executionTime = [];
-    for (let i = 0; i < EXPERIMENTS_NUMBER; i++) {
+
+    for (let i = 0; i < dataCount; i++) {
       const hrstart = process.hrtime();
 
       const insertedObject = await completeInsert(schema);
@@ -42,13 +46,16 @@ export const processProjectMySQL = async (schemas) => {
       const hrend = process.hrtime(hrstart);
       executionTime.push(hrend[1] / 1000000);
     }
-    statistics.create = executionTime.reduce((prev, curr) => prev + curr, 0) / EXPERIMENTS_NUMBER;
+    statistics.create = create.allow && executionTime.reduce((prev, curr) => prev + curr, 0) / dataCount;
 
-    statistics.read = await countOperationTimeMS(completeSelect, insertedDocumentsId, schema);
+    statistics.read = read.allow &&
+      (await countOperationTimeMS(completeSelect, EXPERIMENTS_NUMBER, insertedDocumentsId, schema));
 
-    statistics.update = await countOperationTimeMS(completeUpdate, insertedDocumentsId, schema);
+    statistics.update = update.allow &&
+      (await countOperationTimeMS(completeUpdate, EXPERIMENTS_NUMBER, insertedDocumentsId, schema));
 
-    statistics.delete = await countOperationTimeMS(completeDelete, insertedDocumentsId, schema);
+    statistics.delete = remove.allow &&
+      (await countOperationTimeMS(completeDelete, EXPERIMENTS_NUMBER, insertedDocumentsId, schema));
 
     return statistics;
   }
@@ -119,7 +126,7 @@ export const processProjectMySQL = async (schemas) => {
     return connection.end();
   }
 
-  async function countOperationTimeMS(callOperation, ids, ...args) {
+  async function countOperationTimeMS(callOperation, EXPERIMENTS_NUMBER, ids, ...args) {
     const executionTime = [];
     for (let i = 0; i < EXPERIMENTS_NUMBER; i++) {
       const hrstart = process.hrtime();
