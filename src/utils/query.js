@@ -1,4 +1,6 @@
 import crypto from 'crypto';
+import sampleSize from 'lodash/sampleSize';
+import random from 'lodash/random';
 
 const STRING_TYPE = 'string';
 
@@ -13,3 +15,5 @@ function getRandomString() {
 function getRandomNumber() {
   return Math.random();
 }
+
+export const getRandomSample = (array, size) => sampleSize(array, random(1, array.length - 1));

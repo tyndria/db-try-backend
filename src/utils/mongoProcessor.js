@@ -1,8 +1,10 @@
 import mongoose, {Schema} from 'mongoose';
 import {isAllowed} from './helpers';
-import {getRandom} from './query';
+import {getRandom, getRandomSample} from './query';
 
 const DEFAULT_EXPERIMENTS_NUMBER = 10;
+
+const getFieldNameFromCollName = field => `${field.toLowerCase()}s`;
 
 /* THINK ABOUT MORE SOPHISTICATED METHOD OF GETTING STATISTICS */
 /* 1. INSERT SOME AMOUNT OF DOCUMENTS
@@ -38,14 +40,42 @@ function recognizeRelations(schemas) {
   return relations
 }
 
+function mergeStatistics(result, fields, ...statistics) {
+  return fields.reduce((res, field) => {
+    res[field] = statistics.reduce((res, statistic) => res + statistic[field], 0) / statistics.length;
+    return res;
+  }, result);
+}
+
 async function processOneToManySchemas(schemas, configs) {
+  const statistics = { populate: 0 };
+
   const {primary, foreign} = recognizeRelations(schemas);
 
+  const foreignConfig = configs[foreign._id] || {}
+  const primaryConfig = configs[primary._id] || {};
+  const experimentsNumber = foreignConfig.loopCount || primaryConfig.loopCount || DEFAULT_EXPERIMENTS_NUMBER;
+
   const {foreignIds, foreignCollection, foreignStatistics} =
-    await processForeignScheme(foreign, configs[foreign._id]);
+    await processForeignScheme(foreign, foreignConfig);
 
   const {primaryIds, primaryCollection, primaryStatistics} =
-    await processPrimaryScheme(primary, foreign.name, foreignIds, configs[primary._id]);
+    await processPrimaryScheme(primary, foreign.name, foreignIds, primaryConfig);
+
+  const path = getFieldNameFromCollName(foreign.name);
+  statistics.populate = isAllowed(primaryConfig.populate) &&
+    (await countOperationTimeMS(populateDocument, experimentsNumber, primaryCollection, primaryIds, path, foreign.name));
+
+  foreignStatistics.delete = isAllowed(foreignConfig.remove) &&
+    (await countOperationTimeMS(deleteDocument, experimentsNumber, foreignCollection, foreignIds));
+
+  primaryStatistics.delete = isAllowed(primaryConfig.remove) &&
+    (await countOperationTimeMS(deleteDocument, experimentsNumber, primaryCollection, primaryIds));
+
+  await deleteCollection(foreignCollection);
+  await deleteCollection(primaryCollection);
+
+  return mergeStatistics(statistics, ['create', 'read', 'update', 'delete'], foreignStatistics, primaryStatistics);
 }
 
 async function processPrimaryScheme(schema, foreignSchemaName, foreignIds, config = {}) {
@@ -57,7 +87,8 @@ async function processPrimaryScheme(schema, foreignSchemaName, foreignIds, confi
   const experimentsNumber = loopCount || DEFAULT_EXPERIMENTS_NUMBER;
   const initialDataNumber = dataCount || DEFAULT_EXPERIMENTS_NUMBER;
 
-  const fillDocument = (fields) => ({...getRandomlyFilledDocument(fields), [`${foreignSchemaName}s`]: [foreignIds[0]]})
+  const fillDocument = (fields) =>
+    ({...getRandomlyFilledDocument(fields), [getFieldNameFromCollName(foreignSchemaName)]: [getRandomSample(foreignIds)]})
 
   const {insertedDocumentsId, executionTime} = await processDocumentsInsertion(
     Collection, schema, fillDocument , initialDataNumber);
@@ -161,6 +192,12 @@ async function readDocument(Collection, id) {
 
 async function deleteDocument(Collection, id) {
   return Collection.deleteOne({_id: id});
+}
+
+async function populateDocument(Collection, id, path, model) {
+  return Collection
+    .findOne({_id: id})
+    .populate({path, model});
 }
 
 async function deleteCollection(Collection) {

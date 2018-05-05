@@ -30,20 +30,12 @@ export const run = async ({params, body}, res, next) => {
     .catch(next);
 };
 
-const statistics = [{
-  operation: 'create'
-}, {
-  operation: 'update'
-}, {
-  operation: 'read'
-}, {
-  operation: 'delete'
-}];
+const statistics = ['create', 'update', 'read', 'delete', 'populate'];
 
 const processProject = async (schemas, config) => {
   const mongoStat = await processProjectMongo(schemas, config);
   const mysqlStat = await processProjectMySQL(schemas, config);
-  return statistics.map(({operation}) => {
+  return statistics.map((operation) => {
     return {operation, mongodb: mongoStat[operation], mysql: mysqlStat[operation]};
   });
 };
