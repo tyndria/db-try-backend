@@ -1,4 +1,5 @@
 import mongoose, {Schema} from 'mongoose';
+import isEmpty from 'lodash/isEmpty';
 import {isAllowed} from './helpers';
 import {getRandom, getRandomSample} from './query';
 
@@ -11,17 +12,12 @@ const getFieldNameFromCollName = field => `${field.toLowerCase()}s`;
  * 2. RANDOMLY GET DOCUMENTS IDS THAT SHOULD BE RETRIEVED / UPDATED / DELETED FROM COLLECTION */
 /* for this moment I select/update/delete the same documents that were inserted */
 export const processProjectMongo = async (schemas, configs) => {
-  /*const schema = schemas[0];
-
-  const Collection = await createCollection(schema.name);
-
-  const experimentStatistics = await processOperationSeq(Collection, schema, configs);
-
-  await deleteCollection(Collection);
-
-  return experimentStatistics;*/
-
-  return processOneToManySchemas(schemas, configs)
+  const relations = recognizeRelations(schemas);
+  if (!isEmpty(relations)) {
+    return processOneToManySchemas(relations, configs)
+  } else {
+     return processSchemas(schemas, configs);
+  }
 };
 
 function recognizeRelations(schemas) {
@@ -35,9 +31,12 @@ function recognizeRelations(schemas) {
       }
     })
   })
-  relations.primary = schemas.find(({name}) => name.toLowerCase() === primarySchemeName.toLowerCase());
 
-  return relations
+  if (primarySchemeName) {
+    relations.primary = schemas.find(({name}) => name.toLowerCase() === primarySchemeName.toLowerCase());
+  }
+
+  return relations;
 }
 
 function mergeStatistics(result, fields, ...statistics) {
@@ -47,10 +46,18 @@ function mergeStatistics(result, fields, ...statistics) {
   }, result);
 }
 
+async function processSchemas(schemas, configs) {
+  const schema = schemas[0];
+  const Collection = await createCollection(schema.name);
+  const experimentStatistics = await processOperationSeq(Collection, schema, configs);
+  await deleteCollection(Collection);
+  return experimentStatistics;
+}
+
 async function processOneToManySchemas(schemas, configs) {
   const statistics = { populate: 0 };
 
-  const {primary, foreign} = recognizeRelations(schemas);
+  const {primary, foreign} = schemas;
 
   const foreignConfig = configs[foreign._id] || {}
   const primaryConfig = configs[primary._id] || {};

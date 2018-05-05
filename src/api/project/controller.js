@@ -1,3 +1,5 @@
+import union from 'lodash/union';
+
 import Project, {serializeProject} from './model';
 import Scheme from '../scheme/model';
 import {sendJson} from '../../utils/api';
@@ -30,12 +32,13 @@ export const run = async ({params, body}, res, next) => {
     .catch(next);
 };
 
-const statistics = ['create', 'update', 'read', 'delete', 'populate'];
-
 const processProject = async (schemas, config) => {
   const mongoStat = await processProjectMongo(schemas, config);
   const mysqlStat = await processProjectMySQL(schemas, config);
-  return statistics.map((operation) => {
+
+  const statisticsFields = union(Object.keys(mongoStat), Object.keys(mysqlStat));
+
+  return statisticsFields.map((operation) => {
     return {operation, mongodb: mongoStat[operation], mysql: mysqlStat[operation]};
   });
 };
