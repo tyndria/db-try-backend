@@ -1,0 +1,1 @@
+export const isAllowed = (operation) => operation ? operation.allow : true;

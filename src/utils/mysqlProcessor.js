@@ -1,6 +1,7 @@
 import config from 'config';
 import mysql from 'mysql2/promise';
 import {getRandom} from './query';
+import {isAllowed} from './helpers';
 
 export const processProjectMySQL = async (schemas, configs) => {
   const DEFAULT_EXPERIMENTS_NUMBER = 10;
@@ -22,7 +23,7 @@ export const processProjectMySQL = async (schemas, configs) => {
     return statistics;
   }
 
-  async function processOperationSeq(schema, config) {
+  async function processOperationSeq(schema, config = {}) {
     let statistics = {
       create: 0,
       read: 0,
@@ -32,12 +33,13 @@ export const processProjectMySQL = async (schemas, configs) => {
 
     const {dataCount, loopCount, create, read, update, remove} = config;
 
-    const EXPERIMENTS_NUMBER = loopCount || DEFAULT_EXPERIMENTS_NUMBER;
+    const experimentsNumber = loopCount || DEFAULT_EXPERIMENTS_NUMBER;
+    const initialDataNumber = dataCount || DEFAULT_EXPERIMENTS_NUMBER;
 
     const insertedDocumentsId = [];
     const executionTime = [];
 
-    for (let i = 0; i < dataCount; i++) {
+    for (let i = 0; i < initialDataNumber; i++) {
       const hrstart = process.hrtime();
 
       const insertedObject = await completeInsert(schema);
@@ -46,16 +48,16 @@ export const processProjectMySQL = async (schemas, configs) => {
       const hrend = process.hrtime(hrstart);
       executionTime.push(hrend[1] / 1000000);
     }
-    statistics.create = create.allow && executionTime.reduce((prev, curr) => prev + curr, 0) / dataCount;
+    statistics.create = isAllowed(create) && executionTime.reduce((prev, curr) => prev + curr, 0) / initialDataNumber;
 
-    statistics.read = read.allow &&
-      (await countOperationTimeMS(completeSelect, EXPERIMENTS_NUMBER, insertedDocumentsId, schema));
+    statistics.read = isAllowed(read) &&
+      (await countOperationTimeMS(completeSelect, experimentsNumber, insertedDocumentsId, schema));
 
-    statistics.update = update.allow &&
-      (await countOperationTimeMS(completeUpdate, EXPERIMENTS_NUMBER, insertedDocumentsId, schema));
+    statistics.update = isAllowed(update) &&
+      (await countOperationTimeMS(completeUpdate, experimentsNumber, insertedDocumentsId, schema));
 
-    statistics.delete = remove.allow &&
-      (await countOperationTimeMS(completeDelete, EXPERIMENTS_NUMBER, insertedDocumentsId, schema));
+    statistics.delete = isAllowed(remove) &&
+      (await countOperationTimeMS(completeDelete, experimentsNumber, insertedDocumentsId, schema));
 
     return statistics;
   }
