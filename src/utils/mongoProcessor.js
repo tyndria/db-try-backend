@@ -49,9 +49,9 @@ function mergeStatistics(result, fields, ...statistics) {
 async function processSchemas(schemas, configs) {
   const schema = schemas[0];
   const Collection = await createCollection(schema.name);
-  const experimentStatistics = await processOperationSeq(Collection, schema, configs);
+  const {statistics} = await processScheme(Collection, schema, getRandomlyFilledDocument, configs[schema._id]);
   await deleteCollection(Collection);
-  return experimentStatistics;
+  return statistics;
 }
 
 async function processOneToManySchemas(schemas, configs) {
@@ -63,11 +63,17 @@ async function processOneToManySchemas(schemas, configs) {
   const primaryConfig = configs[primary._id] || {};
   const experimentsNumber = foreignConfig.loopCount || primaryConfig.loopCount || DEFAULT_EXPERIMENTS_NUMBER;
 
-  const {foreignIds, foreignCollection, foreignStatistics} =
-    await processForeignScheme(foreign, foreignConfig);
+  const foreignCollection = await createCollection(foreign.name);
+  const primaryCollection = await createCollection(primary.name);
 
-  const {primaryIds, primaryCollection, primaryStatistics} =
-    await processPrimaryScheme(primary, foreign.name, foreignIds, primaryConfig);
+  const {insertedDocumentsId: foreignIds, statistics: foreignStatistics} =
+    await processScheme(foreignCollection, foreign, getRandomlyFilledDocument, foreignConfig, false);
+
+  const fillPrimaryDocument = (fields) =>
+    ({...getRandomlyFilledDocument(fields), [getFieldNameFromCollName(foreign.name)]: [getRandomSample(foreignIds)]})
+
+  const {insertedDocumentsId: primaryIds, statistics: primaryStatistics} =
+    await processScheme(primaryCollection, primary, fillPrimaryDocument, primaryConfig, false);
 
   const path = getFieldNameFromCollName(foreign.name);
   statistics.populate = isAllowed(primaryConfig.populate) &&
@@ -85,20 +91,15 @@ async function processOneToManySchemas(schemas, configs) {
   return mergeStatistics(statistics, ['create', 'read', 'update', 'delete'], foreignStatistics, primaryStatistics);
 }
 
-async function processPrimaryScheme(schema, foreignSchemaName, foreignIds, config = {}) {
-  const Collection = await createCollection(schema.name);
-
+async function processScheme(Collection, schema, fillDocument, config = {}, doesDelete = true) {
   let statistics = { create: 0, read: 0, update: 0, delete: 0 };
 
-  const {loopCount, dataCount, create, read, update} = config
+  const {loopCount, dataCount, create, read, update, remove} = config
   const experimentsNumber = loopCount || DEFAULT_EXPERIMENTS_NUMBER;
   const initialDataNumber = dataCount || DEFAULT_EXPERIMENTS_NUMBER;
 
-  const fillDocument = (fields) =>
-    ({...getRandomlyFilledDocument(fields), [getFieldNameFromCollName(foreignSchemaName)]: [getRandomSample(foreignIds)]})
-
-  const {insertedDocumentsId, executionTime} = await processDocumentsInsertion(
-    Collection, schema, fillDocument , initialDataNumber);
+  const {executionTime, insertedDocumentsId} = await processDocumentsInsertion(
+    Collection, schema, fillDocument, initialDataNumber);
 
   statistics.create = isAllowed(create) && executionTime.reduce((prev, curr) => prev + curr, 0) / initialDataNumber;
 
@@ -108,30 +109,12 @@ async function processPrimaryScheme(schema, foreignSchemaName, foreignIds, confi
   statistics.update = isAllowed(update) &&
     (await countOperationTimeMS(updateDocument, experimentsNumber, Collection, insertedDocumentsId, schema.fields));
 
-  return {primaryStatistics: statistics, primaryCollection: Collection, primaryIds: insertedDocumentsId};
-}
+  if (doesDelete) {
+    statistics.delete = isAllowed(remove) &&
+      (await countOperationTimeMS(deleteDocument, experimentsNumber, Collection, insertedDocumentsId));
+  }
 
-async function processForeignScheme(schema, config = {}) {
-  const Collection = await createCollection(schema.name);
-
-  let statistics = { create: 0, read: 0, update: 0, delete: 0 };
-
-  const {loopCount, dataCount, create, read, update} = config
-  const experimentsNumber = loopCount || DEFAULT_EXPERIMENTS_NUMBER;
-  const initialDataNumber = dataCount || DEFAULT_EXPERIMENTS_NUMBER;
-
-  const {insertedDocumentsId, executionTime} = await processDocumentsInsertion(
-    Collection, schema, getRandomlyFilledDocument, initialDataNumber);
-
-  statistics.create = isAllowed(create) && executionTime.reduce((prev, curr) => prev + curr, 0) / initialDataNumber;
-
-  statistics.read = isAllowed(read) &&
-    (await countOperationTimeMS(readDocument, experimentsNumber, Collection, insertedDocumentsId));
-
-  statistics.update = isAllowed(update) &&
-    (await countOperationTimeMS(updateDocument, experimentsNumber, Collection, insertedDocumentsId, schema.fields));
-
-  return {foreignStatistics: statistics, foreignCollection: Collection, foreignIds: insertedDocumentsId};
+  return {statistics, insertedDocumentsId};
 }
 
 async function processDocumentsInsertion(Collection, schema, fillDocument, initialDataNumber) {
@@ -151,31 +134,6 @@ async function processDocumentsInsertion(Collection, schema, fillDocument, initi
   }
 
   return {executionTime, insertedDocumentsId};
-}
-
-async function processOperationSeq(Collection, schema, configs) {
-  let statistics = { create: 0, read: 0, update: 0, delete: 0 };
-
-  const config = configs[schema._id] || {};
-  const {loopCount, dataCount, create, read, update, remove} = config
-  const experimentsNumber = loopCount || DEFAULT_EXPERIMENTS_NUMBER;
-  const initialDataNumber = dataCount || DEFAULT_EXPERIMENTS_NUMBER;
-
-  const {executionTime, insertedDocumentsId} = await processDocumentsInsertion(
-    Collection, schema, getRandomlyFilledDocument, initialDataNumber);
-
-  statistics.create = isAllowed(create) && executionTime.reduce((prev, curr) => prev + curr, 0) / initialDataNumber;
-
-  statistics.read = isAllowed(read) &&
-    (await countOperationTimeMS(readDocument, experimentsNumber, Collection, insertedDocumentsId));
-
-  statistics.update = isAllowed(update) &&
-    (await countOperationTimeMS(updateDocument, experimentsNumber, Collection, insertedDocumentsId, schema.fields));
-
-  statistics.delete = isAllowed(remove) &&
-    (await countOperationTimeMS(deleteDocument, experimentsNumber, Collection, insertedDocumentsId));
-
-  return statistics;
 }
 
 // return insertedIds field
