@@ -1,6 +1,6 @@
 import mongoose, {Schema} from 'mongoose';
 import isEmpty from 'lodash/isEmpty';
-import {isAllowed} from './helpers';
+import {isAllowed, recognizeRelations, mergeStatistics} from './helpers';
 import {getRandom, getRandomSample} from './query';
 
 const DEFAULT_EXPERIMENTS_NUMBER = 10;
@@ -19,32 +19,6 @@ export const processProjectMongo = async (schemas, configs) => {
      return processSchemas(schemas, configs);
   }
 };
-
-function recognizeRelations(schemas) {
-  const relations = {};
-  let primarySchemeName = '';
-  schemas.forEach((schema) => {
-    schema.fields.forEach(({name, type}) => {
-      if (type === 'Id') {
-        primarySchemeName = name;
-        relations.foreign = schema;
-      }
-    })
-  })
-
-  if (primarySchemeName) {
-    relations.primary = schemas.find(({name}) => name.toLowerCase() === primarySchemeName.toLowerCase());
-  }
-
-  return relations;
-}
-
-function mergeStatistics(result, fields, ...statistics) {
-  return fields.reduce((res, field) => {
-    res[field] = statistics.reduce((res, statistic) => res + statistic[field], 0) / statistics.length;
-    return res;
-  }, result);
-}
 
 async function processSchemas(schemas, configs) {
   const schema = schemas[0];
