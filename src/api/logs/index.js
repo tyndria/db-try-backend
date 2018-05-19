@@ -5,7 +5,7 @@ import Logs from './model';
 
 const router = Router();
 
-router.get('/', controller.getAll);
+router.get('/:projectId', controller.get);
 router.post('/', controller.create);
 
 export { Logs };
